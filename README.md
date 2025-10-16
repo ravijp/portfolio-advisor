@@ -23,36 +23,7 @@ Make sure you have Python 3.9+ installed:
 python --version
 ```
 
-### Step 2: Create Project Files
-
-#### File 1: `backend/requirements.txt`
-```txt
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-sqlalchemy==2.0.23
-pydantic==2.5.0
-httpx==0.25.1
-yfinance==0.2.32
-pandas==2.1.3
-apscheduler==3.10.4
-python-multipart==0.0.6
-```
-
-#### File 2: `backend/main.py`
-Copy the entire FastAPI backend code I created earlier (the artifact titled "Portfolio Advisor - FastAPI Backend")
-
-#### File 3: `frontend/requirements.txt`
-```txt
-streamlit==1.28.2
-requests==2.31.0
-pandas==2.1.3
-plotly==5.18.0
-```
-
-#### File 4: `frontend/app.py`
-Copy the entire Streamlit frontend code I created earlier (the artifact titled "Portfolio Advisor - Streamlit Frontend")
-
-### Step 3: Install Dependencies
+### Step 2: Install Dependencies
 
 Open two terminal windows:
 
@@ -86,7 +57,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Step 4: Run the Application
+### Step 3: Run the Application
 
 **Terminal 1 (Backend) - Start the API server:**
 ```bash
