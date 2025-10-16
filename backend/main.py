@@ -21,6 +21,10 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Database Setup
 DATABASE_URL = "sqlite:///./portfolio.db"  # Use PostgreSQL in production
@@ -248,19 +252,110 @@ async def fetch_live_price(symbol: str) -> Optional[float]:
         print(f"Error fetching price for {symbol}: {e}")
         return None
 
+async def get_ai_analysis(holding: Dict) -> Dict:
+    """Get AI analysis using configured provider (Groq or Claude)"""
+    provider = os.getenv("AI_PROVIDER", "groq").lower()  # default to groq
+    
+    if provider == "claude":
+        return await get_claude_analysis(holding)
+    elif provider == "groq":
+        return await get_groq_analysis(holding)
+    else:
+        print(f"Unknown AI provider: {provider}. Use 'claude' or 'groq'")
+        return None
+
 async def get_claude_analysis(holding: Dict) -> Dict:
     """Get AI analysis from Claude API"""
     try:
+        api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            print("ERROR: ANTHROPIC_API_KEY not set in environment")
+            return None
+        
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 "https://api.anthropic.com/v1/messages",
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01"
+                },
                 json={
                     "model": "claude-sonnet-4-20250514",
                     "max_tokens": 3000,
                     "messages": [{
                         "role": "user",
-                        "content": f"""Analyze this Indian investment and provide recommendations:
+                        "content": get_analysis_prompt(holding)
+                    }]
+                }
+            )
+            
+            print(f"Claude API Status: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"Claude API error: {response.status_code} - {response.text}")
+                return None
+            
+            data = response.json()
+            
+            if 'content' not in data or not data['content']:
+                print(f"Invalid Claude response: {data}")
+                return None
+                
+            text = data['content'][0]['text']
+            return parse_json_response(text)
+            
+    except Exception as e:
+        print(f"Error in Claude analysis: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+async def get_groq_analysis(holding: Dict) -> Dict:
+    """Get AI analysis using Groq API"""
+    try:
+        api_key = os.getenv("GROQ_API_KEY", "")
+        if not api_key:
+            print("ERROR: GROQ_API_KEY not set in environment")
+            return None
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}"
+                },
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [{
+                        "role": "user",
+                        "content": get_analysis_prompt(holding)
+                    }],
+                    "temperature": 0.3,
+                    "max_tokens": 2000
+                }
+            )
+            
+            print(f"Groq API Status: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"Groq API error: {response.status_code} - {response.text}")
+                return None
+            
+            data = response.json()
+            text = data['choices'][0]['message']['content']
+            return parse_json_response(text)
+            
+    except Exception as e:
+        print(f"Error in Groq analysis: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def get_analysis_prompt(holding: Dict) -> str:
+    """Generate prompt for investment analysis"""
+    return f"""Analyze this Indian investment and provide recommendations:
 
 Stock: {holding['name']} ({holding['symbol']})
 Type: {holding['type']}
@@ -271,7 +366,7 @@ Quantity: {holding['quantity']}
 
 Provide recommendations (BUY/HOLD/SELL) with brief reasoning for each time horizon.
 
-RESPOND ONLY WITH THIS JSON FORMAT:
+RESPOND ONLY WITH THIS JSON FORMAT (no other text):
 {{
   "1m": {{"action": "BUY/HOLD/SELL", "reason": "brief reason"}},
   "1-6m": {{"action": "BUY/HOLD/SELL", "reason": "brief reason"}},
@@ -280,21 +375,145 @@ RESPOND ONLY WITH THIS JSON FORMAT:
   "3-5y": {{"action": "BUY/HOLD/SELL", "reason": "brief reason"}},
   "5y+": {{"action": "BUY/HOLD/SELL", "reason": "brief reason"}}
 }}"""
+
+def parse_json_response(text: str) -> Dict:
+    """Parse JSON from AI response, handling markdown code blocks"""
+    try:
+        # Clean response - remove markdown code blocks
+        text = text.replace('```json\n', '').replace('```json', '')
+        text = text.replace('```\n', '').replace('```', '')
+        text = text.strip()
+        
+        # Try to find JSON in the response if there's extra text
+        import re
+        json_match = re.search(r'\{.*\}', text, re.DOTALL)
+        if json_match:
+            text = json_match.group(0)
+        
+        import json
+        return json.loads(text)
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {e}")
+        print(f"Text received: {text[:500]}")
+        return None
+
+async def get_ai_opportunities(preferences: UserPreferencesDB) -> List[Dict]:
+    """Generate new stock recommendations using configured AI provider"""
+    provider = os.getenv("AI_PROVIDER", "groq").lower()
+    
+    if provider == "claude":
+        return await get_claude_opportunities(preferences)
+    elif provider == "groq":
+        return await get_groq_opportunities(preferences)
+    else:
+        return []
+
+async def get_claude_opportunities(preferences: UserPreferencesDB) -> List[Dict]:
+    """Generate opportunities using Claude"""
+    try:
+        api_key = os.getenv("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            return []
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "Content-Type": "application/json",
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01"
+                },
+                json={
+                    "model": "claude-sonnet-4-20250514",
+                    "max_tokens": 2000,
+                    "messages": [{
+                        "role": "user",
+                        "content": get_opportunities_prompt(preferences)
                     }]
                 }
             )
             
+            if response.status_code != 200:
+                return []
+            
             data = response.json()
+            if 'content' not in data or not data['content']:
+                return []
+            
             text = data['content'][0]['text']
-            # Clean response
             text = text.replace('```json\n', '').replace('```', '').strip()
             
             import json
             return json.loads(text)
     except Exception as e:
-        print(f"Error in Claude analysis: {e}")
-        return None
+        print(f"Error generating Claude opportunities: {e}")
+        return []
 
+async def get_groq_opportunities(preferences: UserPreferencesDB) -> List[Dict]:
+    """Generate opportunities using Groq"""
+    try:
+        api_key = os.getenv("GROQ_API_KEY", "")
+        if not api_key:
+            return []
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}"
+                },
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [{
+                        "role": "user",
+                        "content": get_opportunities_prompt(preferences)
+                    }],
+                    "temperature": 0.5,
+                    "max_tokens": 2000
+                }
+            )
+            
+            if response.status_code != 200:
+                return []
+            
+            data = response.json()
+            text = data['choices'][0]['message']['content']
+            text = text.replace('```json\n', '').replace('```', '').strip()
+            
+            import json
+            return json.loads(text)
+    except Exception as e:
+        print(f"Error generating Groq opportunities: {e}")
+        return []
+
+def get_opportunities_prompt(preferences: UserPreferencesDB) -> str:
+    """Generate prompt for opportunity recommendations"""
+    return f"""Based on current Indian market conditions (October 2025), suggest 3 stocks for investment.
+
+Risk Profile: {preferences.risk_profile}
+Preferred Sectors: {preferences.preferred_sectors if preferences.preferred_sectors else 'Any'}
+
+For each stock, provide:
+- Name
+- Symbol
+- Sector
+- Current Price (estimate)
+- Target Price
+- Reasoning (2-3 sentences)
+
+RESPOND ONLY WITH THIS JSON FORMAT (no other text):
+[
+  {{
+    "name": "Company Name",
+    "symbol": "SYMBOL",
+    "sector": "Sector",
+    "current_price": 0,
+    "target_price": 0,
+    "reasoning": "Why this is a good opportunity"
+  }}
+]"""
+    
 async def fetch_market_news(symbols: List[str] = None) -> List[Dict]:
     """Fetch latest market news (mock implementation - use NewsAPI in production)"""
     # This is a placeholder - integrate with NewsAPI.org or Google News API
@@ -310,58 +529,7 @@ async def fetch_market_news(symbols: List[str] = None) -> List[Dict]:
 
 async def generate_new_opportunities(db: Session, preferences: UserPreferencesDB) -> List[Dict]:
     """Generate new stock recommendations based on user preferences"""
-    # This would use AI to analyze market and suggest stocks
-    # Placeholder implementation
-    opportunities = []
-    
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={"Content-Type": "application/json"},
-                json={
-                    "model": "claude-sonnet-4-20250514",
-                    "max_tokens": 2000,
-                    "messages": [{
-                        "role": "user",
-                        "content": f"""Based on current Indian market conditions (October 2025), suggest 3 stocks for investment.
-
-Risk Profile: {preferences.risk_profile}
-Preferred Sectors: {preferences.preferred_sectors if preferences.preferred_sectors else 'Any'}
-
-For each stock, provide:
-- Name
-- Symbol
-- Sector
-- Current Price (estimate)
-- Target Price
-- Reasoning (2-3 sentences)
-
-RESPOND ONLY WITH THIS JSON FORMAT:
-[
-  {{
-    "name": "Company Name",
-    "symbol": "SYMBOL",
-    "sector": "Sector",
-    "current_price": 0,
-    "target_price": 0,
-    "reasoning": "Why this is a good opportunity"
-  }}
-]"""
-                    }]
-                }
-            )
-            
-            data = response.json()
-            text = data['content'][0]['text']
-            text = text.replace('```json\n', '').replace('```', '').strip()
-            
-            import json
-            opportunities = json.loads(text)
-    except Exception as e:
-        print(f"Error generating opportunities: {e}")
-    
-    return opportunities
+    return await get_ai_opportunities(preferences)  # Changed function call
 
 async def send_email(to_email: str, subject: str, body: str):
     """Send email notification"""
@@ -597,6 +765,22 @@ async def update_holding_price(holding_id: int, db: Session = Depends(get_db)):
     else:
         raise HTTPException(status_code=400, detail="Could not fetch price")
 
+@app.put("/api/holdings/{holding_id}", response_model=HoldingResponse)
+async def update_holding(holding_id: int, holding: HoldingCreate, db: Session = Depends(get_db)):
+    """Update an existing holding"""
+    db_holding = db.query(HoldingDB).filter(HoldingDB.id == holding_id).first()
+    if not db_holding:
+        raise HTTPException(status_code=404, detail="Holding not found")
+    
+    # Update all fields
+    for key, value in holding.model_dump().items():
+        setattr(db_holding, key, value)
+    
+    db_holding.last_updated = datetime.utcnow()
+    db.commit()
+    db.refresh(db_holding)
+    return db_holding
+
 @app.post("/api/holdings/{holding_id}/analyze")
 async def analyze_holding(holding_id: int, db: Session = Depends(get_db)):
     """Analyze a holding and get AI recommendations"""
@@ -620,7 +804,7 @@ async def analyze_holding(holding_id: int, db: Session = Depends(get_db)):
         "quantity": holding.quantity
     }
     
-    recommendations = await get_claude_analysis(holding_dict)
+    recommendations = await get_ai_analysis(holding_dict)  # Changed from get_claude_analysis
     if recommendations:
         holding.recommendations = recommendations
         holding.last_updated = datetime.utcnow()
@@ -628,7 +812,7 @@ async def analyze_holding(holding_id: int, db: Session = Depends(get_db)):
         return {"status": "success", "recommendations": recommendations}
     else:
         raise HTTPException(status_code=500, detail="Analysis failed")
-
+    
 @app.delete("/api/holdings/{holding_id}")
 async def delete_holding(holding_id: int, db: Session = Depends(get_db)):
     """Delete a holding"""
@@ -794,13 +978,12 @@ async def batch_analyze_all(db: Session = Depends(get_db)):
             "quantity": holding.quantity
         }
         
-        recommendations = await get_claude_analysis(holding_dict)
+        recommendations = await get_ai_analysis(holding_dict)  # Changed
         if recommendations:
             holding.recommendations = recommendations
             holding.last_updated = datetime.utcnow()
             analyzed += 1
         
-        # Rate limiting - wait between requests
         await asyncio.sleep(1)
     
     db.commit()
