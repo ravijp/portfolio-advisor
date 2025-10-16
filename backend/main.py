@@ -557,7 +557,7 @@ async def create_holding(holding: HoldingCreate, db: Session = Depends(get_db)):
     if holding.current_price is None:
         holding.current_price = await fetch_live_price(holding.symbol)
     
-    db_holding = HoldingDB(**holding.dict())
+    db_holding = HoldingDB(**holding.model_dump())
     db.add(db_holding)
     db.commit()
     db.refresh(db_holding)
@@ -644,7 +644,7 @@ async def delete_holding(holding_id: int, db: Session = Depends(get_db)):
 @app.post("/api/wishlist", response_model=WishlistResponse)
 async def create_wishlist_item(item: WishlistCreate, db: Session = Depends(get_db)):
     """Add item to wishlist"""
-    db_item = WishlistDB(**item.dict())
+    db_item = WishlistDB(**item.model_dump())
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
@@ -670,7 +670,7 @@ async def delete_wishlist_item(item_id: int, db: Session = Depends(get_db)):
 @app.post("/api/goals", response_model=GoalResponse)
 async def create_goal(goal: GoalCreate, db: Session = Depends(get_db)):
     """Create a new goal"""
-    db_goal = GoalDB(**goal.dict())
+    db_goal = GoalDB(**goal.model_dump())
     db.add(db_goal)
     db.commit()
     db.refresh(db_goal)
@@ -701,13 +701,13 @@ async def update_preferences(prefs: UserPreferences, db: Session = Depends(get_d
     ).first()
     
     if existing:
-        for key, value in prefs.dict().items():
+        for key, value in prefs.model_dump().items():
             setattr(existing, key, value)
         existing.updated_at = datetime.utcnow()
         db.commit()
         return {"status": "updated", "preferences": prefs}
     else:
-        new_prefs = UserPreferencesDB(**prefs.dict())
+        new_prefs = UserPreferencesDB(**prefs.model_dump())
         db.add(new_prefs)
         db.commit()
         return {"status": "created", "preferences": prefs}
