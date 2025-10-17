@@ -17,6 +17,31 @@ portfolio-advisor/
 
 ## 🔧 Step-by-Step Setup
 
+### With UV (Recommended - Much Faster!)
+
+**One-time setup:**
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Clone and setup project
+cd portfolio-advisor
+uv sync  # Creates venv + installs all dependencies
+```
+
+**Run Backend:**
+```bash
+cd backend
+uv run python main.py
+```
+
+**Run Frontend:**
+```bash
+cd frontend  
+uv run streamlit run app.py
+```
+
+### Traditional pip setup (alternative)
 ### Step 1: Install Python
 Make sure you have Python 3.9+ installed:
 ```bash
