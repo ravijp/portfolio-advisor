@@ -1,305 +1,316 @@
-# Portfolio Advisor - Complete Setup & Run Guide
+# Portfolio Advisor
 
-## 📦 Project Structure
+AI-powered portfolio management system with real-time analysis, goal tracking, and daily summaries.
 
-Create this folder structure on your computer:
+## 🚀 Quick Start
 
-```
-portfolio-advisor/
-├── backend/
-│   ├── main.py
-│   └── requirements.txt
-├── frontend/
-│   ├── app.py
-│   └── requirements.txt
-└── README.md
-```
+### Prerequisites
+- Python 3.9 or higher
+- Internet connection (for stock prices and AI analysis)
 
-## 🔧 Step-by-Step Setup
+### Installation
 
-### With UV (Recommended - Much Faster!)
+1. **Install UV** (modern Python package manager)
+   ```bash
+   # Windows (PowerShell)
+   powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+   
+   # macOS/Linux
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
 
-**One-time setup:**
+2. **Setup Project**
+   ```bash
+   cd portfolio-advisor
+   uv sync
+   ```
+   
+   This creates a virtual environment and installs all dependencies automatically.
+
+### Running the Application
+
+Open **two terminal windows**:
+
+**Terminal 1 - Backend API:**
 ```bash
-# Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Clone and setup project
 cd portfolio-advisor
-uv sync  # Creates venv + installs all dependencies
+uv run python backend/main.py
 ```
+Expected output: `Uvicorn running on http://0.0.0.0:8000`
 
-**Run Backend:**
+**Terminal 2 - Frontend UI:**
 ```bash
-cd backend
-uv run python main.py
+cd portfolio-advisor
+uv run streamlit run frontend/app.py
 ```
+Your browser opens automatically at `http://localhost:8501`
 
-**Run Frontend:**
+## 🔑 Configuration
+
+### AI Provider Setup
+Set your AI provider and API key in environment variables:
+
+**Using Groq (Recommended - Free tier available):**
 ```bash
-cd frontend  
-uv run streamlit run app.py
+# Windows
+set AI_PROVIDER=groq
+set GROQ_API_KEY=your-key-here
+
+# macOS/Linux
+export AI_PROVIDER=groq
+export GROQ_API_KEY=your-key-here
 ```
 
-### Traditional pip setup (alternative)
-### Step 1: Install Python
-Make sure you have Python 3.9+ installed:
+**Using Claude:**
 ```bash
-python --version
+# Windows
+set AI_PROVIDER=claude
+set ANTHROPIC_API_KEY=your-key-here
+
+# macOS/Linux
+export AI_PROVIDER=claude
+export ANTHROPIC_API_KEY=your-key-here
 ```
 
-### Step 2: Install Dependencies
+Get API keys:
+- Groq: https://console.groq.com/keys (Free tier: 30 requests/min)
+- Claude: https://console.anthropic.com/
 
-Open two terminal windows:
+### Email Notifications (Optional)
 
-**Terminal 1 (Backend):**
+For daily portfolio summaries via email:
+
 ```bash
-cd portfolio-advisor/backend
-python -m venv venv
-
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-# Install packages
-pip install -r requirements.txt
-```
-
-**Terminal 2 (Frontend):**
-```bash
-cd portfolio-advisor/frontend
-python -m venv venv
-
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
-
-# Install packages
-pip install -r requirements.txt
-```
-
-### Step 3: Run the Application
-
-**Terminal 1 (Backend) - Start the API server:**
-```bash
-cd portfolio-advisor/backend
-# Make sure venv is activated
-python main.py
-```
-
-You should see:
-```
-INFO:     Uvicorn running on http://0.0.0.0:8000
-INFO:     Application startup complete.
-```
-
-**Terminal 2 (Frontend) - Start the Streamlit UI:**
-```bash
-cd portfolio-advisor/frontend
-# Make sure venv is activated
-streamlit run app.py
-```
-
-Your browser should automatically open to: `http://localhost:8501`
-
-## 🎯 Using the Application
-
-### First Time Setup:
-1. Go to **Settings** tab
-2. Enter your email address
-3. Set your risk profile and preferences
-4. Save preferences
-
-### Add Your First Holding:
-1. Go to **Portfolio** tab
-2. Click "➕ Add New Holding"
-3. Fill in the details:
-   - Name: e.g., "Reliance Industries"
-   - Symbol: e.g., "RELIANCE"
-   - Type: Stock or Mutual Fund
-   - Quantity: e.g., 50
-   - Average Price: e.g., 2450
-   - Current Price: e.g., 2580
-   - Sector: e.g., "Energy"
-4. Click "Add Holding"
-
-### Get AI Recommendations:
-1. Click "✨ Analyze" button on any holding
-2. Or click "✨ Analyze All Holdings" in the sidebar
-3. Wait for AI analysis to complete
-4. View recommendations for each time horizon
-
-### Set Up Daily Summaries:
-1. Go to **Daily Summary** tab
-2. Enter your email
-3. Click "📨 Send Summary Now" to test
-4. The system will automatically send summaries at 8 AM daily
-
-## 🔑 Email Setup (Optional but Recommended)
-
-To enable email notifications, set these environment variables before running the backend:
-
-**Windows:**
-```cmd
+# Windows
 set SMTP_SERVER=smtp.gmail.com
 set SMTP_PORT=587
 set SMTP_USERNAME=your-email@gmail.com
 set SMTP_PASSWORD=your-app-password
-```
 
-**macOS/Linux:**
-```bash
+# macOS/Linux
 export SMTP_SERVER=smtp.gmail.com
 export SMTP_PORT=587
 export SMTP_USERNAME=your-email@gmail.com
 export SMTP_PASSWORD=your-app-password
 ```
 
-### Gmail Setup:
-1. Go to Google Account Settings
-2. Enable 2-Factor Authentication
-3. Go to Security → App Passwords
-4. Generate an app password for "Mail"
-5. Use this password in `SMTP_PASSWORD`
+**Gmail Setup:**
+1. Enable 2-Factor Authentication in Google Account
+2. Go to Security → App Passwords
+3. Generate password for "Mail"
+4. Use this as `SMTP_PASSWORD`
 
-## 🎨 Features Available Now
+## 📖 Using the Application
 
-✅ **Portfolio Management**
-- Add stocks and mutual funds
-- Track profit/loss
-- Real-time price updates (via Yahoo Finance)
-- Delete holdings
+### 1. First Time Setup
+- Navigate to **Settings** tab
+- Enter your email address
+- Select risk profile (conservative/moderate/aggressive)
+- Save preferences
 
-✅ **AI-Powered Analysis**
-- Get Buy/Hold/Sell recommendations
-- Analysis across 6 time horizons
-- Detailed reasoning for each recommendation
+### 2. Add Holdings
+- Go to **Portfolio** tab → Click "➕ Add New Holding"
+- Fill in details:
+  - **Name**: Company name (e.g., "Reliance Industries")
+  - **Symbol**: Stock ticker (e.g., "RELIANCE" for NSE, add .NS suffix for Yahoo Finance)
+  - **Type**: Stock or Mutual Fund
+  - **Quantity**: Number of shares/units
+  - **Average Price**: Your purchase price
+  - **Current Price**: Leave blank for auto-fetch
+  - **Sector**: Optional (e.g., "Energy", "Banking")
 
-✅ **Wishlist Tracking**
-- Add stocks you're interested in
+### 3. Get AI Recommendations
+- Click "✨ Analyze" on individual holdings, or
+- Click "✨ Analyze All Holdings" in sidebar
+- View recommendations across 6 time horizons:
+  - Next 1 Month
+  - 1-6 Months
+  - 6 Months - 1 Year
+  - 1-3 Years
+  - 3-5 Years
+  - 5+ Years
+
+### 4. Track Goals
+- Go to **Goals** tab → Create financial goals
+- Set target amount and time horizon
+- Track progress automatically
+
+### 5. Manage Wishlist
+- **Wishlist** tab → Add stocks you're interested in
 - Set target prices
-- Get alerts when prices drop
+- Get alerts when prices drop below target
 
-✅ **Goal Tracking**
-- Set financial goals
-- Track progress with visual indicators
-- Map goals to time horizons
+### 6. Daily Summaries
+- **Daily Summary** tab → Test email delivery
+- Automatic daily emails at 8 AM with:
+  - Portfolio performance
+  - Action items (buy/sell recommendations)
+  - Watchlist alerts
+  - Goal progress
 
-✅ **Daily Summaries**
-- Portfolio performance overview
-- Action items (what to buy/sell)
-- New investment opportunities
-- Watchlist alerts
-- Goal progress updates
+## 🛠️ Common Tasks
 
-✅ **Beautiful UI**
-- Interactive charts
-- Real-time updates
-- Mobile-responsive design
+### Update Stock Prices
+Click "🔄 Update All Prices" in sidebar (uses Yahoo Finance)
+
+### Reset Database
+Delete `backend/portfolio.db` and restart backend
+
+### Add New Dependencies
+```bash
+cd portfolio-advisor
+uv add package-name
+```
+
+### Update All Packages
+```bash
+cd portfolio-advisor
+uv sync --upgrade
+```
 
 ## 🐛 Troubleshooting
 
-### Backend won't start:
-- Check if port 8000 is available
-- Verify all packages installed: `pip list`
-- Check Python version: `python --version` (need 3.9+)
+| Issue | Solution |
+|-------|----------|
+| Backend won't start | Check if port 8000 is free. Try `netstat -ano \| findstr :8000` |
+| Frontend can't connect | Ensure backend is running and showing "Uvicorn running" message |
+| Price updates fail | Check internet connection. Use correct symbol format (e.g., "RELIANCE.NS") |
+| AI analysis fails | Verify API key is set correctly. Check API rate limits |
+| Email not sending | Confirm SMTP credentials. Use App Password for Gmail, not regular password |
 
-### Frontend can't connect to backend:
-- Make sure backend is running on http://localhost:8000
-- Check `API_BASE_URL` in `app.py` matches your backend
+## 📁 Project Structure
 
-### Price updates not working:
-- Check internet connection
-- Yahoo Finance requires correct symbol format (e.g., "RELIANCE.NS" for NSE)
-- Some symbols might not be available
+```
+portfolio-advisor/
+├── backend/
+│   ├── main.py              # FastAPI server
+│   ├── requirements.txt     # Backend dependencies
+│   └── portfolio.db         # SQLite database (auto-created)
+├── frontend/
+│   ├── app.py              # Streamlit UI
+│   └── requirements.txt     # Frontend dependencies
+├── pyproject.toml           # UV project configuration
+└── README.md
+```
 
-### Email not sending:
-- Verify SMTP credentials are set correctly
-- For Gmail, make sure you're using App Password, not regular password
-- Check spam folder for test emails
+## 🎯 Features
 
-## 📊 Database
-
-The application uses SQLite database (`portfolio.db`) which is created automatically in the backend directory. Your data persists between restarts.
-
-To reset the database, simply delete `portfolio.db` and restart the backend.
+✅ Portfolio Management - Track stocks and mutual funds  
+✅ AI Analysis - Get buy/hold/sell recommendations  
+✅ Goal Tracking - Monitor financial goals  
+✅ Wishlist - Track stocks of interest  
+✅ Daily Summaries - Email reports with insights  
+✅ Price Updates - Real-time data from Yahoo Finance  
+✅ Multi-Horizon Analysis - 6 different time periods  
 
 ## 🚀 Production Deployment
 
-For production use, consider:
+**For Production:**
+1. Switch to PostgreSQL (update `DATABASE_URL` in `main.py`)
+2. Use environment files (.env) for secrets
+3. Deploy backend to Railway/Render/Heroku
+4. Deploy frontend to Streamlit Cloud
+5. Add user authentication
+6. Enable HTTPS
+7. Set up monitoring and logging
 
-1. **Use PostgreSQL instead of SQLite**
-   - Change `DATABASE_URL` in `main.py`
-   
-2. **Deploy Backend to:**
-   - Railway.app (free tier available)
-   - Heroku
-   - AWS/GCP/Azure
-   
-3. **Deploy Frontend to:**
-   - Streamlit Cloud (free for public apps)
-   - Heroku
-   
-4. **Use environment variables for:**
-   - Database credentials
-   - SMTP credentials
-   - API keys
+## 📚 Tech Stack
 
-5. **Add authentication:**
-   - Implement user login
-   - Secure API endpoints
-   - Multi-user support
-
-## 📈 Next Enhancements
-
-Want to add more features? Consider:
-- Real-time stock price websockets
-- Technical indicators (RSI, MACD, etc.)
-- News sentiment analysis
-- Portfolio rebalancing suggestions
-- Tax calculation
-- Export to Excel/PDF
-- Mobile app
-- Notification via SMS/WhatsApp
-
-## 🆘 Need Help?
-
-If you run into issues:
-1. Check the terminal logs for error messages
-2. Verify all dependencies are installed
-3. Make sure both backend and frontend are running
-4. Check your Python version
-5. Try restarting both servers
-
-## 📝 Quick Command Reference
-
-**Start Backend:**
-```bash
-cd portfolio-advisor/backend
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-python main.py
-```
-
-**Start Frontend:**
-```bash
-cd portfolio-advisor/frontend
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-streamlit run app.py
-```
-
-**Update Dependencies:**
-```bash
-pip install --upgrade -r requirements.txt
-```
-
-**Check API Health:**
-Open browser: http://localhost:8000
-Should see: `{"message": "Portfolio Advisor API", "version": "1.0.0"}`
+- **Backend**: FastAPI, SQLAlchemy, APScheduler
+- **Frontend**: Streamlit, Plotly, Pandas
+- **AI**: Claude/Groq APIs
+- **Data**: Yahoo Finance (yfinance)
+- **Database**: SQLite (dev), PostgreSQL (prod)
 
 ---
 
-🎉 **You're all set!** Enjoy your AI-powered portfolio management system!
+## Appendix A: Using pip (Alternative)
+
+If you prefer traditional pip workflow:
+
+### Setup
+```bash
+# Backend
+cd portfolio-advisor/backend
+python -m venv venv
+venv\Scripts\activate          # Windows
+source venv/bin/activate       # macOS/Linux
+pip install -r requirements.txt
+
+# Frontend
+cd portfolio-advisor/frontend
+python -m venv venv
+venv\Scripts\activate          # Windows
+source venv/bin/activate       # macOS/Linux
+pip install -r requirements.txt
+```
+
+### Running
+```bash
+# Backend (activate venv first)
+cd portfolio-advisor/backend
+python main.py
+
+# Frontend (activate venv first)
+cd portfolio-advisor/frontend
+streamlit run app.py
+```
+
+### Managing Dependencies
+```bash
+# Add package
+pip install package-name
+pip freeze > requirements.txt
+
+# Update packages
+pip install --upgrade -r requirements.txt
+```
+
+## Appendix B: Convenience Scripts
+
+Create these files in the project root for easier startup:
+
+**start-backend.bat** (Windows):
+```batch
+@echo off
+cd /d "%~dp0"
+uv run python backend/main.py
+```
+
+**start-frontend.bat** (Windows):
+```batch
+@echo off
+cd /d "%~dp0"
+uv run streamlit run frontend/app.py
+```
+
+**start-backend.sh** (macOS/Linux):
+```bash
+#!/bin/bash
+cd "$(dirname "$0")"
+uv run python backend/main.py
+```
+
+**start-frontend.sh** (macOS/Linux):
+```bash
+#!/bin/bash
+cd "$(dirname "$0")"
+uv run streamlit run frontend/app.py
+```
+
+Make scripts executable (macOS/Linux):
+```bash
+chmod +x start-backend.sh start-frontend.sh
+```
+
+Then simply run:
+```bash
+./start-backend.sh    # macOS/Linux
+start-backend.bat     # Windows
+```
+
+---
+
+**Need help?** Check terminal logs for errors or open an issue on GitHub.
+
+🎉 Happy investing!
